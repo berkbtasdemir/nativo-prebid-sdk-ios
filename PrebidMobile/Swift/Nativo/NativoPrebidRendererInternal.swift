@@ -74,7 +74,9 @@ public class NativoPrebidRendererInternal: NSObject, PrebidMobilePluginRenderer,
         
         if (isNativoRendering) {
             DispatchQueue.main.async {
-                self.expandFullWidth(view, parentView: bannerView)
+                self.expandFullWidth(bannerView)
+                self.expandFullHeight(bannerView)
+                self.expandView(view, to: bannerView, withMinimum:bid.size.height)
             }
         }
     }
@@ -92,33 +94,49 @@ public class NativoPrebidRendererInternal: NSObject, PrebidMobilePluginRenderer,
     
     // MARK: - Private functions
     
-    private func expandFullWidth(_ view: UIView, parentView: UIView) {
+    private func expandFullWidth(_ parentView: UIView) {
         // Remove any constraints we don't need
         let parentContraints = parentView.constraints
         let widthConstraints = parentContraints.filter({ constraint in
             (constraint.firstItem as? UIView) === parentView && constraint.firstAttribute == .width
             || (constraint.secondItem as? UIView) === parentView && constraint.secondAttribute == .width
         })
-        let heightConstraints = parentContraints.filter({ constraint in
+        NSLayoutConstraint.deactivate(widthConstraints)
+        
+        // Allow BannerView to expand to the full width of its parent
+        if let grandParentView = parentView.superview {
+            parentView.widthAnchor.constraint(equalTo: grandParentView.widthAnchor).isActive = true
+        }
+    }
+    
+    private func expandFullHeight(_ parentView: UIView) {
+        // Remove any constraints we don't need
+        let parentConstraints = parentView.constraints
+        let heightConstraints = parentConstraints.filter({ constraint in
             (constraint.firstItem as? UIView) === parentView && constraint.firstAttribute == .height
             || (constraint.secondItem as? UIView) === parentView && constraint.secondAttribute == .height
         })
-        NSLayoutConstraint.deactivate(widthConstraints + heightConstraints)
+        NSLayoutConstraint.deactivate(heightConstraints)
         
-        // Allow displayView to expand to the full width of its parent
+        // Allow displayView to expand to the full height of its parent
         if let grandParentView = parentView.superview {
-            parentView.widthAnchor.constraint(equalTo: grandParentView.widthAnchor).isActive = true
             parentView.heightAnchor.constraint(equalTo: grandParentView.heightAnchor).isActive = true
         }
+    }
+    
+    private func expandView(_ view: UIView, to parentView: UIView, withMinimum height: CGFloat) {
         let displayWidth = view.widthAnchor.constraint(equalTo: parentView.widthAnchor)
         let displayHeight = view.heightAnchor.constraint(equalTo: parentView.heightAnchor)
+        let displayMinHeight = view.heightAnchor.constraint(greaterThanOrEqualToConstant: height)
         let displayCenterX = view.centerXAnchor.constraint(equalTo:parentView.centerXAnchor)
         let displayCenterY = view.centerYAnchor.constraint(equalTo: parentView.centerYAnchor)
+        displayHeight.priority = .defaultHigh
         displayCenterX.priority = .defaultHigh
         displayCenterY.priority = .defaultHigh
         NSLayoutConstraint.activate([
             displayWidth,
             displayHeight,
+            displayMinHeight,
             displayCenterX,
             displayCenterY
         ])
@@ -138,4 +156,6 @@ public class NativoPrebidRendererInternal: NSObject, PrebidMobilePluginRenderer,
             print("\(error)")
         }
     }
+    
 }
+
