@@ -7,11 +7,11 @@
   http://www.apache.org/licenses/LICENSE-2.0
  
   Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  */
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 
 import UIKit
 
@@ -373,6 +373,19 @@ public class BannerView:
         }
     }
     
+    private func reportNativoLoadingSuccess(with size: CGSize) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self,
+                  let delegate = self.delegate,
+                  delegate.responds(to: #selector(BannerViewDelegate.bannerView(_:didReceiveNativoAdWithSize:)))
+            else {
+                self?.reportLoadingSuccess(with: size)
+                return
+            }
+            delegate.bannerView?(self, didReceiveNativoAdWithSize: size)
+        }
+    }
+    
     private func reportLoadingSuccess(with size: CGSize) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
@@ -468,7 +481,13 @@ extension BannerView : AdLoadFlowControllerDelegate, BannerAdLoaderDelegate {
         adSize: CGSize
     ) {
         deployView(adView)
-        reportLoadingSuccess(with: adSize)
+        
+        // If Nativo provided the winning bid/response for this load, invoke the dedicated callback and suppress the generic one.
+        if let response = adLoadFlowController?.bidResponse, (response is NativoBidResponse) {
+            reportNativoLoadingSuccess(with: adSize)
+        } else {
+            reportLoadingSuccess(with: adSize)
+        }
     }
 }
 
