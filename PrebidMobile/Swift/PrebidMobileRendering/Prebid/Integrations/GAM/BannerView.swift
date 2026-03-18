@@ -86,7 +86,9 @@ public class BannerView:
     
     // MARK: Externally observable
     var deployedView: UIView?
+    
     var isRefreshStopped = false
+    var isRequestStopped = false
     var isAdOpened = false
     
     // MARK: Computed helpers
@@ -94,6 +96,10 @@ public class BannerView:
     /// whether auto-refresh is allowed to occur now
     var mayRefreshNow: Bool {
         guard let controller = adLoadFlowController else {
+            return false
+        }
+        
+        if isRefreshStopped {
             return false
         }
         
@@ -226,6 +232,7 @@ public class BannerView:
     
     /// Loads the ad for the banner view.
     public func loadAd() {
+        isRequestStopped = false
         adLoadFlowController?.refresh()
     }
     
@@ -261,8 +268,16 @@ public class BannerView:
         adUnitConfig.globalORTBConfig
     }
     
+    /// Stops any in-flight request (this load cycle).
+    public func stopRequest() {
+        adLoadFlowController?.enqueueGatedBlock { [weak self] in
+            self?.isRequestStopped = true
+        }
+    }
+    
     /// Stops the auto-refresh of the ad.
     public func stopRefresh() {
+        autoRefreshManager?.cancelRefreshTimer()
         adLoadFlowController?.enqueueGatedBlock { [weak self] in
             self?.isRefreshStopped = true
         }
@@ -466,17 +481,19 @@ extension BannerView : AdLoadFlowControllerDelegate, BannerAdLoaderDelegate {
     }
     
     public func adLoadFlowControllerWillSendBidRequest(_ adLoadFlowController: AdLoadFlowController) {
-        isRefreshStopped = false
         autoRefreshManager?.cancelRefreshTimer()
     }
     
     public func adLoadFlowControllerWillRequestPrimaryAd(_ adLoadFlowController: AdLoadFlowController) {
-        autoRefreshManager?.setupRefreshTimer()
+        // Only set up the timer if refresh is not stopped.
+        if !isRefreshStopped {
+            autoRefreshManager?.setupRefreshTimer()
+        }
         eventHandler?.interactionDelegate = self
     }
     
     public func adLoadFlowControllerShouldContinue(_ adLoadFlowController: AdLoadFlowController) -> Bool {
-        !isRefreshStopped
+        return !isRequestStopped
     }
     
     // MARK: - BannerAdLoaderDelegate
