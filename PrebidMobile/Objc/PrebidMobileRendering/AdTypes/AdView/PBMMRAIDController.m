@@ -189,13 +189,13 @@
         [self.prebidWebView updateMRAIDLayoutInfoWithForceNotification:NO];
         if (self.isTwoPartExpand && ([prevState isEqual:PBMMRAIDState.expanded] || [prevState isEqual:PBMMRAIDState.resized])) {
             self.delayedMraidState = PBMMRAIDState.defaultState;
+            // Force exposure check to keep MRAID states in sync.
+            [self.prebidWebView forceExposureCheck];
         } else {
             [self.prebidWebView changeToMRAIDState:(isInterstitial ? PBMMRAIDState.hidden : PBMMRAIDState.defaultState)];
         }
-
-        
         // Notify Mraid Collapsed *after* the state has changed and Only if we were Expanded.
-        if (self.isTwoPartExpand && [prevState isEqual:PBMMRAIDState.expanded]) {
+        if ([prevState isEqual:PBMMRAIDState.expanded]) {
             self.mraidState = PBMMRAIDState.defaultState;
             [self.creativeViewDelegate creativeMraidDidCollapse:self.creative];
         }
@@ -346,6 +346,7 @@
                 
                 // ALSO set the first part (banner) to Expanded per MRAID spec
                 self.delayedMraidState = PBMMRAIDState.expanded;
+                [self.prebidWebView forceExposureCheck];
 
                 [newWebView prepareForMRAIDWithRootViewController:self.viewControllerForPresentingModals];
                 [self.creative.modalManager.modalViewController addFriendlyObstructionsToMeasurementSession:self.creative.transaction.measurementSession];

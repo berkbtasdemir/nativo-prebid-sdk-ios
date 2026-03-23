@@ -708,17 +708,21 @@ static PBMError *extracted(NSString *errorMessage) {
     }
 }
 
+// Force exposure check to keep the MRAID state in sync.
+// Moving from Prebid's poll based tracking to Nativo scroll based tracking 
+// means that MRAID_onExposureChange doesn't happen without user interaction anymore.
+// Instead we simply manually force the exposure check when needed.
 - (void)forceExposureCheck {
-    if (self.viewabilityTracker != nil && self.exposureDelegate != nil && [self.exposureDelegate shouldCheckExposure]) {
-        [self.viewabilityTracker checkExposureWithForce:YES];
-    }
-    if (self.exposureChecker != nil && self.exposureDelegate != nil && [self.exposureDelegate shouldCheckExposure]) {
-        id<PBMViewExposure> exposureNow = self.exposureChecker.exposure;
-        [self MRAID_onExposureChange:exposureNow];
-        if (self.exposureDelegate != nil) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.viewabilityTracker != nil && self.exposureDelegate != nil) {
+            [self.viewabilityTracker checkExposureWithForce:YES];
+        }
+        if (self.exposureChecker != nil && self.exposureDelegate != nil) {
+            id<PBMViewExposure> exposureNow = self.exposureChecker.exposure;
+            [self MRAID_onExposureChange:exposureNow];
             [self.exposureDelegate webView:self exposureChange:exposureNow];
         }
-    }
+    });
 }
 
 // updates the state of the webview in mraid.js
