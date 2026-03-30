@@ -233,6 +233,14 @@ public class GAMBannerEventHandler :
             
             proxyBanner = banner
             
+
+            // Store proxy banner on bids so click URL can be extracted on ad click
+            if let bannerView = banner?.banner, let bids = bidResponse?.allBids {
+                for bid in bids {
+                    bid.gamProxyBannerView = bannerView
+                }
+            }
+
             loadingDelegate?.sdkDidWin(bidResponse)
         }
     }

@@ -433,6 +433,11 @@
             } else {
                 [self.eventManager trackEvent:PBMTrackingEventClick];
             }
+
+            // Extract and fire GAM click URL
+            if (self.transaction.bid) {
+                [NativoGAMClickFetcher extractAndFireFor:self.transaction.bid];
+            }
         }
         
         completion(success);
