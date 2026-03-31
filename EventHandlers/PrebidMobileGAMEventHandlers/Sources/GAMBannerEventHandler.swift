@@ -62,6 +62,11 @@ public class GAMBannerEventHandler :
     public func trackImpression() {
         proxyBanner?.recordImpression()
     }
+
+    public func trackClick() {
+        guard let bid = bidResponse?.allBids?.first else { return }
+        NativoGAMClickFetcher.extractAndFire(for: bid)
+    }
     
     public func requestAd(with bidResponse: BidResponse?) {
         self.bidResponse = bidResponse

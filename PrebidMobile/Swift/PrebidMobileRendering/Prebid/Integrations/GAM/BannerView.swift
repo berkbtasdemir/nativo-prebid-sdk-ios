@@ -311,11 +311,21 @@ public class BannerView:
         return viewControllerForPresentingModal
     }
     
+    public func trackClick(forDisplayView: UIView) {
+        guard let eventHandler = self.eventHandler,
+              eventHandler.responds(to: #selector(BannerEventHandler.trackClick)) else {
+                  return
+              }
+        eventHandler.trackClick()
+    }
+
     public func didLeaveApp(from displayView: UIView) {
+        trackClick(forDisplayView: displayView)
         willLeaveApp()
     }
-    
+
     public func willPresentModal(from displayView: UIView) {
+        trackClick(forDisplayView: displayView)
         willPresentModal()
     }
     
