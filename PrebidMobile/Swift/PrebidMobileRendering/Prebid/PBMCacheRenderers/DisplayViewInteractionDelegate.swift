@@ -24,12 +24,6 @@ public protocol DisplayViewInteractionDelegate: NSObjectProtocol {
     /// - Parameters:
     ///   - forDisplayView: The `UIView` instance associated with the ad impression.
     @objc func trackImpression(forDisplayView: UIView)
-
-    /// Tracks a click for the specified display view.
-    ///
-    /// - Parameters:
-    ///   - forDisplayView: The `UIView` instance associated with the ad click.
-    @objc optional func trackClick(forDisplayView: UIView)
     
     /// Notifies that the user has left the app after interacting with the ad.
     ///

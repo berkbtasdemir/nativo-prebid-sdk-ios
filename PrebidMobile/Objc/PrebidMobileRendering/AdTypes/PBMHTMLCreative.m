@@ -433,7 +433,6 @@
             } else {
                 [self.eventManager trackEvent:PBMTrackingEventClick];
             }
-
         }
         
         completion(success);
