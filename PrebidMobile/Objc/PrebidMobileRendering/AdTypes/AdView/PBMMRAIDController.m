@@ -401,7 +401,39 @@
             pbmModalState.onStateWillPop = ^(id<PBMModalState> _Nonnull poppedState) {
                 @strongify(self);
                 if (!self) { return; }
+
+                // Pin MRAID event ordering to eliminate a device-dependent
+                // race. The creative's revert-to-banner logic listens for
+                // standard MRAID events, but the previous close flow fired
+                // stateChange via a dispatch_async that could be preempted
+                // by the layout pass triggered from reimplant. On slower
+                // devices, sizeChange (banner dimensions) arrived BEFORE
+                // stateChange(default), so the creative re-laid-out its
+                // still-expanded article DOM into banner dimensions -- the
+                // visible result is only the top ("header") portion.
+                //
+                // Fire the events synchronously in a known-good order:
+                //   1) stateChange(default) -- leave the expanded state
+                //   2) reimplant + synchronous layout -- frame becomes
+                //      banner-sized and sizeChange fires
+                //   3) forceExposureCheck -- re-confirm viewability
+                //
+                // The existing updateForClose call below still runs (async)
+                // and re-fires these; that second pass is a no-op since
+                // state is already default and layout hasn't changed.
+
+                // 1) State change first so Nativo knows it's leaving expanded.
+                [self.prebidWebView changeToMRAIDState:PBMMRAIDState.defaultState];
+
+                // 2) Reimplant and force a synchronous layout so the web
+                //    view's frame is banner-sized before sizeChange fires.
                 [self.creativeViewDelegate creativeReadyToReimplant:self.creative];
+                [self.creative.view.superview layoutIfNeeded];
+
+                // 3) Exposure check last; the creative now has a consistent
+                //    (state=default, size=banner, viewable) snapshot to act on.
+                [self.prebidWebView forceExposureCheck];
+
                 [self updateForClose:self.creative.creativeModel.adConfiguration.presentAsInterstitial];
             };
             
